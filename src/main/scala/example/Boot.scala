@@ -6,12 +6,8 @@ import akka.stream.ActorMaterializer
 import akka.util.Timeout
 
 import scala.concurrent.duration._
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.{Directive0, Directive1, Directives, Route}
-import akka.http.scaladsl.server.directives.{CacheConditionDirectives, Credentials}
-import akka.http.scaladsl.server.directives.Credentials.{Missing, Provided}
-import de.heikoseeberger.akkahttpcirce.{BaseCirceSupport, ErrorAccumulatingUnmarshaller, FailFastUnmarshaller}
-import io.circe.Printer
+import akka.http.scaladsl.server.{Directives, Route}
+import de.heikoseeberger.akkahttpcirce._
 import io.circe.generic.auto._
 
 object Boot extends App with Directives {
@@ -21,7 +17,7 @@ object Boot extends App with Directives {
   implicit val materializer = ActorMaterializer()
   implicit val timeout: Timeout = 10.seconds
 
-  new AkkaHttpCirceSupportAccumulating {
+  new ErrorAccumulatingCirceSupport {
 
     val host = "0.0.0.0"
     val port = 9991
@@ -35,7 +31,7 @@ object Boot extends App with Directives {
 
   }
 
-  new AkkaHttpCirceSupportFailFast {
+  new FailFastCirceSupport {
 
     val host = "0.0.0.0"
     val port = 9992
@@ -52,23 +48,7 @@ object Boot extends App with Directives {
 
 }
 
-
 case class TestEntity(
   field1: String,
   field2: String
 )
-
-
-trait DropNullKeysPrinter { this: BaseCirceSupport =>
-
-  implicit val printer: Printer = Printer.noSpaces.copy(dropNullKeys = true)
-
-}
-
-trait AkkaHttpCirceSupportAccumulating extends BaseCirceSupport
-  with DropNullKeysPrinter
-  with ErrorAccumulatingUnmarshaller
-
-trait AkkaHttpCirceSupportFailFast extends BaseCirceSupport
-  with DropNullKeysPrinter
-  with FailFastUnmarshaller
